@@ -33,8 +33,3 @@ This is a Streamlit web app that predicts the win probability of a Valorant team
 
 ## Model
 The app uses a trained machine learning model (`team_kd_win_model.pkl`) to make predictions based on historical match data.
-
-## License
-MIT License
-
-]

@@ -1,0 +1,4 @@
+streamlit
+numpy
+joblib
+scikit-learn  # Ensure scikit-learn is installed for the model

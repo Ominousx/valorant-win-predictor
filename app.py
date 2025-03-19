@@ -2,45 +2,64 @@ import streamlit as st
 import joblib
 import numpy as np
 
-# Load the saved model and scaler
-model = joblib.load("logistic_regression_model.pkl")
-scaler = joblib.load("scaler.pkl")
+def load_model():
+    model = joblib.load("logistic_regression_model.pkl")  # Use joblib to load model
+    scaler = joblib.load("scaler.pkl")  # Use joblib to load scaler
+    return model, scaler
 
-st.title("Valorant Win Probability Predictor")
-st.write("Enter each player's kills and deaths to calculate the team's K:D ratio and predict the win probability.")
+def predict_win_probability(model, scaler, kd_ratio):
+    kd_ratio = np.array([[kd_ratio]])  # Reshape for model input
+    kd_ratio_scaled = scaler.transform(kd_ratio)  # Apply scaling
+    probability = model.predict_proba(kd_ratio_scaled)[0, 1]  # Probability of winning
+    return probability
 
-def calculate_team_kd(kills, deaths):
-    total_kills = sum(kills)
-    total_deaths = sum(deaths)
-    return total_kills / max(total_deaths, 1)  # Avoid division by zero
+def main():
+    st.title("Valorant Match Win Predictor")
+    model, scaler = load_model()
 
-# Team A inputs
-st.subheader("Team A")
-team_a_kills = [st.number_input(f"Player {i+1} Kills (Team A)", min_value=0, step=1) for i in range(5)]
-team_a_deaths = [st.number_input(f"Player {i+1} Deaths (Team A)", min_value=0, step=1) for i in range(5)]
-team_a_kd = calculate_team_kd(team_a_kills, team_a_deaths)
+    st.header("Enter Team Stats")
+    col1, col2, col3 = st.columns([2, 1, 1])
+    with col1:
+        st.subheader("Team Name")
+    with col2:
+        st.subheader("Kills")
+    with col3:
+        st.subheader("Deaths")
 
-# Team B inputs
-st.subheader("Team B")
-team_b_kills = [st.number_input(f"Player {i+1} Kills (Team B)", min_value=0, step=1) for i in range(5)]
-team_b_deaths = [st.number_input(f"Player {i+1} Deaths (Team B)", min_value=0, step=1) for i in range(5)]
-team_b_kd = calculate_team_kd(team_b_kills, team_b_deaths)
+    team_a = st.text_input("", placeholder="Enter Team A name", key="team_a")
+    col1, col2, col3 = st.columns([2, 1, 1])
+    with col1:
+        st.write(team_a)
+    with col2:
+        team_a_kills = st.number_input("", min_value=0, step=1, key="team_a_kills")
+    with col3:
+        team_a_deaths = st.number_input("", min_value=0, step=1, key="team_a_deaths")
 
-if st.button("Predict Win Probability"):
-    # Scale each K:D separately
-    team_a_kd_scaled = scaler.transform(np.array([[team_a_kd]]))
-    team_b_kd_scaled = scaler.transform(np.array([[team_b_kd]]))
+    st.markdown("---")
 
-    # Predict win probabilities
-    team1_prob = model.predict_proba(team_a_kd_scaled)[:, 1][0] * 100
-    team2_prob = model.predict_proba(team_b_kd_scaled)[:, 1][0] * 100
+    team_b = st.text_input("", placeholder="Enter Team B name", key="team_b")
+    col1, col2, col3 = st.columns([2, 1, 1])
+    with col1:
+        st.write(team_b)
+    with col2:
+        team_b_kills = st.number_input("", min_value=0, step=1, key="team_b_kills")
+    with col3:
+        team_b_deaths = st.number_input("", min_value=0, step=1, key="team_b_deaths")
 
-    # Normalize probabilities so they sum to 100%
-    total = team1_prob + team2_prob
-    team1_final = (team1_prob / total) * 100
-    team2_final = (team2_prob / total) * 100
+    if st.button("Predict Win Probability"):
+        team_a_kd = team_a_kills / max(1, team_a_deaths)
+        team_b_kd = team_b_kills / max(1, team_b_deaths)
 
-    # Display results
-    st.subheader("Win Probability")
-    st.write(f"**Team A:** {team1_final:.2f}%")
-    st.write(f"**Team B:** {team2_final:.2f}%")
+        team_a_win_prob = predict_win_probability(model, scaler, team_a_kd)
+        team_b_win_prob = predict_win_probability(model, scaler, team_b_kd)
+
+        st.subheader("Win Probability Predictions")
+        st.write(f"**{team_a}:** {team_a_win_prob:.2%} chance to win")
+        st.write(f"**{team_b}:** {team_b_win_prob:.2%} chance to win")
+
+        st.subheader("Team K:D Ratios")
+        st.write(f"**{team_a} K:D:** {team_a_kd:.2f}")
+        st.write(f"**{team_b} K:D:** {team_b_kd:.2f}")
+
+if __name__ == "__main__":
+    main()

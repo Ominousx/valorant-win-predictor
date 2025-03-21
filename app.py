@@ -14,7 +14,7 @@ def predict_win_probability(model, scaler, kd_ratio):
     probability = model.predict_proba(kd_ratio_scaled)[0, 1]  # Probability of winning
     return probability
 
-def plot_win_probability_curve(model, scaler, team_a_kd, team_b_kd, team_a, team_b):
+def plot_win_probability_curve(model, scaler, team_a_kd, team_b_kd, team_a, team_b, map_name):
     kd_values = np.linspace(0.5, 2.5, 100)
     probabilities = [predict_win_probability(model, scaler, kd) for kd in kd_values]
 
@@ -28,12 +28,12 @@ def plot_win_probability_curve(model, scaler, team_a_kd, team_b_kd, team_a, team
     plt.axvline(x=kd_unlosable, linestyle="dashed", color="red", label=f"Unlosable Threshold (K:D = {kd_unlosable})")
 
     # Team K:D markers with dots
-    plt.scatter([team_a_kd], [predict_win_probability(model, scaler, team_a_kd)], color="orange", label=f"{team_a} ({team_a_kd:.2f})", zorder=3)
-    plt.scatter([team_b_kd], [predict_win_probability(model, scaler, team_b_kd)], color="purple", label=f"{team_b} ({team_b_kd:.2f})", zorder=3)
+    plt.scatter([team_a_kd], [predict_win_probability(model, scaler, team_a_kd)], color="orange", label=f"{team_a} ({team_a_kd:.2f})")
+    plt.scatter([team_b_kd], [predict_win_probability(model, scaler, team_b_kd)], color="purple", label=f"{team_b} ({team_b_kd:.2f})")
 
     plt.xlabel("Team K:D")
     plt.ylabel("Win Probability")
-    plt.title("Win Probability vs. Team K:D")
+    plt.title(f"{map_name} Win Probability vs. Team K:D")
     plt.legend()
     st.pyplot(plt)
 
@@ -41,7 +41,10 @@ def main():
     st.title("Valorant Match Win Predictor")
     model, scaler = load_model()
 
-    st.header("Enter Team Stats")
+    st.header("Enter Match Details")
+    map_name = st.text_input("Map Name", placeholder="Enter map name", key="map_name")
+
+    st.subheader("Enter Team Stats")
     col1, col2, col3 = st.columns([2, 1, 1])
     with col1:
         st.subheader("Team Name")
@@ -77,29 +80,17 @@ def main():
         team_a_win_prob = predict_win_probability(model, scaler, team_a_kd)
         team_b_win_prob = predict_win_probability(model, scaler, team_b_kd)
 
-        st.subheader("Win Probability Predictions")
-
-        # Dynamic color coding
-        if team_a_win_prob > 0.7:
-            st.success(f"**{team_a}:** {team_a_win_prob:.2%} chance to win")
-        elif team_a_win_prob < 0.3:
-            st.error(f"**{team_a}:** {team_a_win_prob:.2%} chance to win")
-        else:
-            st.warning(f"**{team_a}:** {team_a_win_prob:.2%} chance to win")
-
-        if team_b_win_prob > 0.7:
-            st.success(f"**{team_b}:** {team_b_win_prob:.2%} chance to win")
-        elif team_b_win_prob < 0.3:
-            st.error(f"**{team_b}:** {team_b_win_prob:.2%} chance to win")
-        else:
-            st.warning(f"**{team_b}:** {team_b_win_prob:.2%} chance to win")
-
-        st.subheader("Team K:D Ratios")
-        st.write(f"**{team_a} K:D:** {team_a_kd:.2f}")
-        st.write(f"**{team_b} K:D:** {team_b_kd:.2f}")
+        st.subheader("Match Summary")
+        match_summary = f"""
+        | Team   | K:D Ratio | Win Probability |
+        |--------|----------|----------------|
+        | **{team_a}** | {team_a_kd:.2f} | {team_a_win_prob:.2%} |
+        | **{team_b}** | {team_b_kd:.2f} | {team_b_win_prob:.2%} |
+        """
+        st.markdown(match_summary)
 
         # Plot win probability curve
-        plot_win_probability_curve(model, scaler, team_a_kd, team_b_kd, team_a, team_b)
+        plot_win_probability_curve(model, scaler, team_a_kd, team_b_kd, team_a, team_b, map_name)
 
 if __name__ == "__main__":
     main()
